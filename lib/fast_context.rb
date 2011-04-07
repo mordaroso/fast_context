@@ -1,5 +1,4 @@
-puts "Loading fast_context"
-require 'shoulda/context'
+require 'shoulda/context/context'
 
 module ShouldaContextExtensions
   def self.included(base)
@@ -11,7 +10,7 @@ module ShouldaContextExtensions
 
   def fast_context(name, &blk)
     @fast_subcontexts ||= []
-    @fast_subcontexts << Shoulda::FastContext.new(name, self, &blk)
+    @fast_subcontexts << Shoulda::Context::FastContext.new(name, self, &blk)
   end
 
   def build_with_fast_context
@@ -21,12 +20,13 @@ module ShouldaContextExtensions
   end
 
   def am_subcontext_with_fast_context?
-    parent.is_a?(Shoulda::Context) || parent.is_a?(Shoulda::FastContext)
+    parent.is_a?(Shoulda::Context::Context) || parent.is_a?(Shoulda::Context::FastContext)
   end
 end
 
 module Shoulda
-  class FastContext < Context
+  module Context
+    class FastContext < Context
     def create_test_from_should_hash
       test_name = ["test:", full_name, "should", "run_fast"].flatten.join(' ').to_sym
 
@@ -67,17 +67,18 @@ module Shoulda
       print_should_eventuallys
     end
   end
+  end
 end
 
 class ActiveSupport::TestCase
   def self.fast_context(name, &blk)
-    if Shoulda.current_context
-      Shoulda.current_context.fast_context(name, &blk)
+    if Shoulda::Context.current_context
+      Shoulda::Context.current_context.fast_context(name, &blk)
     else
-      context = Shoulda::FastContext.new(name, self, &blk)
+      context = Shoulda::Context::FastContext.new(name, self, &blk)
       context.build
     end
   end  
 end
 
-Shoulda::Context.send :include, ShouldaContextExtensions
+Shoulda::Context::Context.send :include, ShouldaContextExtensions
